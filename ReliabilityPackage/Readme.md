@@ -78,9 +78,7 @@ clf = RandomForestClassifier(random_state=42, min_samples_leaf=10, n_estimators=
 clf.fit(X_train, y_train)
 ~~~
 5. Create and train an autoencoder for the implementation of the Density Principle  
-(Please note that if the layer_sizes are not specified, the default autoencoder is built as follows: [dim_input, dim_input + 4, dim_input + 8, dim_input + 16, dim_input + 32];  
-if needed, specify a more suitable architecture)
-
+(Please note that if the layer_sizes are not specified, the default autoencoder is built as follows: [dim_input, dim_input + 4, dim_input + 8, dim_input + 16, dim_input + 32]; if needed, specify a more suitable architecture)
 ~~~python 
 ae = create_and_train_autoencoder(X_train, X_val, batchsize=80, epochs=1000)
 ~~~
@@ -134,9 +132,7 @@ X_train, X_val, y_train, y_val = train_test_split(X_seventy, y_seventy, test_siz
 reg = LinearRegression().fit(X_train, y_train)
 ~~~
 5. Create and train an autoencoder for the implementation of the Density Principle  
-(Please note that if the layer_sizes are not specified, the default autoencoder is built as follows: [dim_input, dim_input + 4, dim_input + 8, dim_input + 16, dim_input + 32];  
-if needed, specify a more suitable architecture)
-
+(Please note that if the layer_sizes are not specified, the default autoencoder is built as follows: [dim_input, dim_input + 4, dim_input + 8, dim_input + 16, dim_input + 32]; if needed, specify a more suitable architecture)
 ~~~python 
 ae = create_and_train_autoencoder(X_train, X_val, batchsize=80, epochs=1000)
 ~~~
