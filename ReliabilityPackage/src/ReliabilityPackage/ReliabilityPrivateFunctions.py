@@ -44,32 +44,36 @@ def _train_one_epoch(epoch_index, training_set, training_loader, optimizer, loss
     return last_loss
 
 
-def _compute_synpts_accuracy(predict_func, synpts, X_train, y_train, k=5):
+def _compute_synpts_perf(problem_type, predict_func, synpts, X_train, y_train, k=5):
     """
-    Computes the accuracy of the synthetic points with the classifer.
+    Computes the performances of the synthetic points with the classifer.
 
-    This function computes the accuracy on the set of synthetic points.
-    The accuracy of each synthetic points is computed by comparing the predicted labels of its k nearest
-    training samples to their actual labels.
+    This function computes the accuracy (classification problem) or the MSE (regression problem) on the set of synthetic points.
+    The accuracy/MSE of each synthetic points is computed by comparing the predicted labels/values of its k nearest
+    training samples to their actual labels/values.
 
+    :param str problem_type: The string indicating whether it is a classification or regression problem. Available options: 'classification', 'regression'
     :param callable predict_func: The predict function of the classifier.
     :param numpy.ndarray synpts: The synthetic points with shape (n_synpts, n_features).
     :param numpy.ndarray X_train: The training data with shape (n_samples, n_features).
     :param numpy.ndarray y_train: The training labels with shape (n_samples,).
     :param int k: The number of nearest neighbors to consider (default: 5).
 
-    :return: The accuracy scores associated with each synthetic point.
+    :return: The performance scores associated with each synthetic point.
     :rtype: numpy.ndarray
     """
-    acc_syn = []
+    perf_syn = []
 
     for i in range(len(synpts)):
         distances = np.linalg.norm(X_train - synpts[i], axis=1)
         nn = distances.argsort()[:k]
-        acc_syn.append(accuracy_score(predict_func(X_train[nn, :]), y_train[nn]))
-    acc_syn = np.asarray(acc_syn)
+        if problem_type == 'classification':
+            perf_syn.append(accuracy_score(predict_func(X_train[nn, :]), y_train[nn]))
+        elif problem_type == 'regression':
+            perf_syn.append(mean_squared_error(predict_func(X_train[nn, :]), y_train[nn]))
+    perf_syn = np.asarray(perf_syn)
 
-    return acc_syn
+    return perf_syn
 
 
 def _compute_metrics(y, ypred):
