@@ -134,12 +134,12 @@ class ReliabilityDetector:
 
     Args:
         ae (AE): The autoencoder model.
-        proxy_model: The proxy model used for the local fit reliability computation.
+        proxy_model: A scikit-learn classifier (e.g., DecisionTreeClassifier or MLPClassifier) used for the local fit reliability computation.
         mse_thresh (float): The MSE threshold used for the density reliability computation.
 
     Attributes:
         ae (AE): The autoencoder model.
-        clf: The proxy model used for the local fit reliability computation.
+        clf: A scikit-learn classifier (e.g., DecisionTreeClassifier or MLPClassifier) used for the local fit reliability computation.
         mse_thresh (float): The MSE threshold for the density reliability computation.
 
     Methods:
@@ -207,11 +207,11 @@ class ReliabilityDetector:
             x (numpy.ndarray or torch.Tensor): The input data point.
 
         Returns:
-            bool: The combined reliability value (True for reliable, False for unreliable).
+            int: 1 if the combined reliability is positive (reliable), 0 otherwise.
     """
         density_rel = self.compute_density_reliability(x)
         localfit_rel = self.compute_localfit_reliability(x)
-        return density_rel and localfit_rel
+        return 1 if (density_rel and localfit_rel) == 1 else 0
 
 
 class DensityPrincipleDetector:
