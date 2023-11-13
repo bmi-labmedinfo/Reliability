@@ -5,8 +5,8 @@ from sklearn.metrics import mean_squared_error
 from sklearn.neural_network import MLPClassifier
 from sklearn import tree
 from ReliabilityPackage.ReliabilityClasses import AE, ReliabilityDetector, DensityPrincipleDetector
-from ReliabilityPackage.ReliabilityPrivateFunctions import _train_one_epoch, _compute_synpts_accuracy,\
-    _val_scores_diff_mse, _contains_only_integers, _extract_values_proportionally
+from ReliabilityPackage.ReliabilityPrivateFunctions import _train_one_epoch, _compute_synpts_perf, _val_scores_diff_mse, \
+    _contains_only_integers, _extract_values_proportionally
 import plotly.graph_objects as go
 import matplotlib.pyplot as plt
 
@@ -22,7 +22,7 @@ def create_autoencoder(layer_sizes):
     layers' sizes.
     The autoencoder is used for the implementation of the Density Principle.
 
-    :param list layer_sizes: A list containing the number of nodes of each layer of the encoder (decoder built with
+    :param list[int] layer_sizes: A list containing the number of nodes of each layer of the encoder (decoder built with
      symmetry).
 
     :return: An instance of the autoencoder model.
@@ -32,8 +32,8 @@ def create_autoencoder(layer_sizes):
     return ae
 
 
-def train_autoencoder(ae, training_set, validation_set, batchsize, epochs=1000, optimizer=None,
-                      loss_function=torch.nn.MSELoss(),
+def train_autoencoder(ae, training_set, validation_set, batchsize, epochs=1000, optimizer_class=torch.optim.Adam,
+                      optimizer_params=None, loss_function=torch.nn.MSELoss(),
                       ):
     """
     Trains the autoencoder model using the provided training and validation sets.
@@ -43,21 +43,23 @@ def train_autoencoder(ae, training_set, validation_set, batchsize, epochs=1000, 
     and loss function. The training progress is evaluated on the validation set after each epoch, and the resulting
     validation loss is shown in the image.
 
-    :param torch.nn.Module ae: The autoencoder model to be trained.
+    :param AE ae: The autoencoder model to be trained.
     :param numpy.ndarray training_set: The training set.
     :param numpy.ndarray validation_set: The validation set.
     :param int batchsize: The batch size used for training.
     :param int epochs: The number of training epochs (default: 1000).
-    :param torch.optim.Optimizer optimizer: The optimizer used for parameter updates.
-        If None, an Adam optimizer with default parameters will be used (default: None).
+    :param optimizer_class: The optimizer class to be used for parameter updates (default: torch.optim.Adam).
+    :param dict optimizer_params: A dictionary of optimizer parameters (default: 'lr'=1e-4, 'weight_decay'=1e-8).
     :param torch.nn.Module loss_function: The loss function used for training.
         If None, the mean squared error (MSE) loss function will be used (default: torch.nn.MSELoss()).
 
     :return: The trained autoencoder model.
-    :rtype: torch.nn.Module
+    :rtype: AE
     """
-    if optimizer is None:
-        optimizer = torch.optim.Adam(ae.parameters(), lr=1e-4, weight_decay=1e-8)
+    if optimizer_params is None:
+        optimizer_params = {'lr': 1e-4, 'weight_decay': 1e-8}
+
+    optimizer = optimizer_class(ae.parameters(), **optimizer_params)
 
     training_loader = DataLoader(dataset=training_set, batch_size=batchsize, shuffle=True)
     validation_loader = DataLoader(dataset=validation_set, batch_size=batchsize, shuffle=True)
@@ -90,7 +92,8 @@ def train_autoencoder(ae, training_set, validation_set, batchsize, epochs=1000, 
 
 
 def create_and_train_autoencoder(training_set, validation_set, batchsize, layer_sizes=None, epochs=1000,
-                                 optimizer=None, loss_function=torch.nn.MSELoss(),
+                                 optimizer_class=torch.optim.Adam, optimizer_params=None,
+                                 loss_function=torch.nn.MSELoss(),
                                  ):
     """
     Creates and trains an autoencoder model using the provided training and validation sets.
@@ -103,13 +106,13 @@ def create_and_train_autoencoder(training_set, validation_set, batchsize, layer_
     :param numpy.ndarray training_set: The training set.
     :param numpy.ndarray validation_set: The validation set.
     :param int batchsize: The batch size used for training.
-    :param list layer_sizes: A list containing the number of nodes of each layer of the encoder (decoder built with
+    :param list[int] layer_sizes: A list containing the number of nodes of each layer of the encoder (decoder built with
      symmetry).
         If None, the default dimension of the encoder's layers is [dim_input, dim_input + 4, dim_input + 8,
         dim_input + 16, dim_input + 32]
     :param int epochs: The number of training epochs (default: 1000).
-    :param torch.optim.Optimizer optimizer: The optimizer used for parameter updates.
-        If None, an Adam optimizer with default parameters will be used (default: None).
+    :param optimizer_class: The optimizer class to be used for parameter updates (default: torch.optim.Adam).
+    :param dict optimizer_params: A dictionary of optimizer parameters (default: 'lr'=1e-4, 'weight_decay'=1e-8).
     :param torch.nn.Module loss_function: The loss function used for training.
         If None, the mean squared error (MSE) loss function will be used (default: torch.nn.MSELoss()).
 
@@ -121,8 +124,10 @@ def create_and_train_autoencoder(training_set, validation_set, batchsize, layer_
         layer_sizes = [dim_input, dim_input + 4, dim_input + 8, dim_input + 16, dim_input + 32]
     ae = AE(layer_sizes)
 
-    if optimizer is None:
-        optimizer = torch.optim.Adam(ae.parameters(), lr=1e-4, weight_decay=1e-8)
+    if optimizer_params is None:
+        optimizer_params = {'lr': 1e-4, 'weight_decay': 1e-8}
+
+    optimizer = optimizer_class(ae.parameters(), **optimizer_params)
 
     training_loader = DataLoader(dataset=training_set, batch_size=batchsize, shuffle=True)
     validation_loader = DataLoader(dataset=validation_set, batch_size=batchsize, shuffle=True)
@@ -158,7 +163,7 @@ def compute_dataset_avg_mse(ae, X):
     """
     Compute the average mean squared error (MSE) for a given autoencoder model and dataset.
 
-    :param torch.nn.Module ae: The autoencoder model.
+    :param AE ae: The autoencoder model.
     :param numpy.ndarray X: The dataset of interest
 
     :return: The average MSE value for the reconstructed samples.
@@ -170,21 +175,25 @@ def compute_dataset_avg_mse(ae, X):
     return np.mean(mse)
 
 
-def generate_synthetic_points(predict_func, X_train, y_train, method='GN', k=5):
+def generate_synthetic_points(problem_type, predict_func, X_train, y_train, method='GN', k=5):
     """
     Generates synthetic points based on the specified method.
 
     This function generates synthetic points based on the method specified in "method".
     'GN': the synthetic points are generated from the training set by adding gaussian random noise, with different
-    values of variance, to the continous variables,
-          and by randomly extracting, proportionally to their frequencies, the values of binary and integer variables.
+    values of variance, to the continous variables, and by randomly extracting, proportionally to their frequencies, the values of binary and integer variables.
 
+    :param str problem_type: The string indicating whether it is a classification or regression problem. Available options: 'classification', 'regression'
+    :param callable predict_func: A callable predict function of a classifier.
     :param numpy.ndarray X_train: The training set with shape (n_samples, n_features).
+    :param numpy.ndarray y_train: The training target labels.
     :param str method: The method used to generate synthetic points (default: 'GN').
         Currently, only the 'GN' (Gaussian Noise) method is supported.
 
-    :return: The synthetic points generated with the specified method.
-    :rtype: numpy.ndarray
+    :return: A tuple containing two elements:
+        - synthetic_data: The synthetic data points generated with the specified method.
+        - perf_syn: The associated performance values of the synthetic data points evaluated with the provided predict_func.
+    :rtype: tuple
     """
     allowed_methods = ['GN']
     if method not in allowed_methods:
@@ -203,9 +212,9 @@ def generate_synthetic_points(predict_func, X_train, y_train, method='GN', k=5):
 
             noisy_data = np.concatenate((noisy_data, noisy_data_temp))
 
-    acc_syn = _compute_synpts_accuracy(predict_func, noisy_data, X_train, y_train, k)
+    perf_syn = _compute_synpts_perf(problem_type, predict_func, noisy_data, X_train, y_train, k)
 
-    return noisy_data, acc_syn
+    return noisy_data, perf_syn
 
 
 def perc_mse_threshold(ae, validation_set, perc=95):
@@ -239,7 +248,7 @@ def mse_threshold_plot(ae, X_val, y_val, predict_func, metric='f1_score'):
 
     This function generates a plot of performance metrics based on different Mean Squared Error (MSE) thresholds.
     It computes the number (and percentage) of the reliable and unreliable samples obtained with each threshold, and
-    different performance metricsnusing the `val_scores_diff_mse` function.
+    different performance metrics using the `val_scores_diff_mse` function.
     The plot shows the performance metric selected ('metric') (e.g., balanced_accuracy, precision, recall, F1-score,
     MCC, or Brier score) for reliable and unreliable samples at different MSE thresholds, and their number and
     percentage. A slider allows to move the x-axis.
@@ -248,8 +257,7 @@ def mse_threshold_plot(ae, X_val, y_val, predict_func, metric='f1_score'):
     :param array-like X_val: The validation dataset.
     :param array-like y_val: The validation labels.
     :param callable predict_func: The predict function of the classifier.
-    :param str metric: The performance metric to display on the plot. Available options: 'balanced_accuracy',
-    'precision', 'recall', 'f1_score', 'mcc', 'brier_score'. Default is 'f1_score'.
+    :param str metric: The performance metric to display on the plot. Available options: 'balanced_accuracy', 'precision', 'recall', 'f1_score', 'mcc', 'brier_score'. Default is 'f1_score'.
 
     :return: A Plotly Figure object representing the MSE threshold plot.
     :rtype: go.Figure
@@ -468,40 +476,41 @@ def mse_threshold_barplot(ae, X_val, y_val, predict_func):
 
 def density_predictor(ae, mse_thresh):
     """
-    Creates a DensityPrinciplePredictor object for a given autoencoder and MSE threshold.
+    Creates a DensityPrincipleDetector object for a given autoencoder and MSE threshold.
 
-    This function creates a DensityPrinciplePredictor object using the specified autoencoder and MSE threshold.
-    The DensityPrinciplePredictor is a density-based predictor that assigns reliability scores to samples based on their
+    This function creates a DensityPrincipleDetector object using the specified autoencoder and MSE threshold.
+    The DensityPrincipleDetector is a density-based predictor that assigns reliability scores to samples based on their
     reconstruction error (MSE) compared to the MSE threshold.
 
-    :param torch.nn.Module ae: The autoencoder used for projection.
+    :param AE ae: The autoencoder used for projection.
     :param float mse_thresh: The MSE threshold used for assigning reliability scores.
 
-    :return: A DensityPrinciplePredictor object.
+    :return: A DensityPrincipleDetector object.
     :rtype: DensityPrincipleDetector
     """
     DP = DensityPrincipleDetector(ae, mse_thresh)
     return DP
 
 
-def create_reliability_detector(ae, syn_pts, acc_syn, mse_thresh, acc_thresh, proxy_model='MLP'):
+def create_reliability_detector(problem_type, ae, syn_pts, perf_syn, mse_thresh, perf_thresh, proxy_model='MLP'):
     """
-    Creates a ReliabilityPredictor object for a given autoencoder, synthetic points, accuracy of the synthetic points,
+    Creates a ReliabilityDetector object for a given autoencoder, synthetic points, accuracy of the synthetic points,
     MSE threshold, and accuracy threshold.
 
-    This function creates a ReliabilityPredictor object using the specified autoencoder, synthetic points, accuracy of
-    the synthetic points, MSE threshold, and accuracy threshold. The ReliabilityPredictor assigns the density
-    reliability of samples based on their reconstruction error (MSE), with respect to the MSE threshold, while assigns
+    This function creates a ReliabilityDetector object using the specified autoencoder, synthetic points, performance values of
+    the synthetic points, MSE threshold, and performance threshold. The ReliabilityDetector assigns the density
+    reliability of samples based on their reconstruction error (MSE), with respect to the MSE threshold, while it assigns
     the local fit reliability based on the prediction of a model ('proxy_model'), trained on the synthetic points
-    labelled as "local-fit" reliable/unreliable according to their associated accuracy with respect to the accuracy
+    labelled as "local-fit" reliable/unreliable according to their associated performance value with respect to the performance
     threshold.
 
-    :param torch.nn.Module ae: The autoencoder used for projection.
+    :param str problem_type: The string indicating whether it is a classification or regression problem. Available options: 'classification', 'regression'
+    :param AE ae: The autoencoder used for projection.
     :param array-like syn_pts: The synthetic points used for training the "local-fit" reliability predictor.
-    :param array-like acc_syn: The accuracy scores corresponding to the synthetic points.
+    :param array-like perf_syn: The performance scores corresponding to the synthetic points.
     :param float mse_thresh: The MSE threshold used for assigning the density reliability scores.
-    :param float acc_thresh: The accuracy threshold used for assigning the "local-fit" reliability scores.
-    :param str proxy_model: The type of proxy model used for training the "local-fit"reliability predictor.
+    :param float perf_thresh: The performance threshold used for assigning the "local-fit" reliability scores.
+    :param str proxy_model: The type of proxy model used for training the "local-fit" reliability predictor.
         Available options: 'MLP', 'tree'. Default is 'MLP' (Multi-Layer Perceptron).
 
     :return: A ReliabilityPackage object.
@@ -511,8 +520,11 @@ def create_reliability_detector(ae, syn_pts, acc_syn, mse_thresh, acc_thresh, pr
     if proxy_model not in allowed_proxy_model:
         raise ValueError(f"Invalid value for proxy_model. Allowed values are {allowed_proxy_model}.")
     y_syn_pts = []
-    for i in range(len(acc_syn)):
-        y_syn_pts.append(1) if acc_syn[i] >= acc_thresh else y_syn_pts.append(0)
+    for i in range(len(perf_syn)):
+        if problem_type == 'classification':
+            y_syn_pts.append(1) if perf_syn[i] >= perf_thresh else y_syn_pts.append(0)
+        elif problem_type == 'regression':
+            y_syn_pts.append(1) if perf_syn[i] <= perf_thresh else y_syn_pts.append(0)
 
     if proxy_model == 'MLP':
         clf = MLPClassifier(activation="tanh", random_state=42, max_iter=1000).fit(syn_pts, y_syn_pts)
@@ -529,11 +541,10 @@ def compute_dataset_reliability(RD, X, mode='total'):
     Computes the reliability of the samples in a dataset
 
     This function computes the density/local-fit/total reliability of the samples in the X dataset, based on the mode
-    specified, with the ReliabilityPackage RD
+    specified.
     :param ReliabilityDetector RD: A ReliabilityPackage object.
     :param array-like X: the specified dataset
-    :param str mode: the type of reliability to compute; Available options: 'density', 'local-fit', 'total'. Default is
-    'total'
+    :param str mode: the type of reliability to compute; Available options: 'density', 'local-fit', 'total'. Default is 'total'
     :return: a numpy 1-D array containing the reliability of each sample (1 for reliable, 0 for unreliable)
     :rtype: numpy.ndarray
     """
