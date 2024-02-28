@@ -1,6 +1,6 @@
 # Reliability_Package
 
-This repository includes the codes for the implementation of the Reliability package as implemented by Nicora et al. in [1]. 
+This repository includes the codes for the implementation of the Reliability package as implemented by Peracchio et al. in [1]. 
 
 ## AIM
 
@@ -179,6 +179,6 @@ unreliable_test = X_test[np.where(reliability_test == 0)]
 0.0.19 (10-11-2023): update Readme.md
 
 ## References
-[1] Nicora G, Rios M, Abu-Hanna A, Bellazzi R. Evaluating pointwise reliability of machine learning prediction. Journal of Biomedical Informatics 2022;127:103996. https://doi.org/10.1016/j.jbi.2022.103996.  
+[1] Peracchio L, Nicora G, Parimbelli E, Buonocore TM, Bergamaschi R, Tavazzi E, et al. Evaluation of Predictive Reliability to Foster Trust in Artificial Intelligence. A case study in Multiple Sclerosis 2024. http://arxiv.org/abs/2402.17554.    
 [2]	Assessment List for Trustworthy Artificial Intelligence (ALTAI) for self-assessment | Shaping Europe’s digital future 2020. https://digital-strategy.ec.europa.eu/en/library/assessment-list-trustworthy-artificial-intelligence-altai-self-assessment.  
 [3]	Saria S, Subbaswamy A. Tutorial: Safe and Reliable Machine Learning. ArXiv 2019; abs/1904.07204. https://doi.org/10.48550/arXiv.1904.07204.
