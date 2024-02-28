@@ -158,7 +158,7 @@ For any question or information, please contact us at lorenzo.peracchio01@univer
 
 
 ## References
-[1] Peracchio L, Nicora G, Parimbelli E, Buonocore TM, Bergamaschi R, Tavazzi E, et al. Evaluation of Predictive Reliability to Foster Trust in Artificial Intelligence. A case study in Multiple Sclerosis 2024. http://arxiv.org/abs/2402.17554 
+[1] Peracchio L, Nicora G, Parimbelli E, Buonocore TM, Bergamaschi R, Tavazzi E, et al. Evaluation of Predictive Reliability to Foster Trust in Artificial Intelligence. A case study in Multiple Sclerosis 2024. http://arxiv.org/abs/2402.17554  
 [2]	Assessment List for Trustworthy Artificial Intelligence (ALTAI) for self-assessment | Shaping Europe’s digital future 2020. https://digital-strategy.ec.europa.eu/en/library/assessment-list-trustworthy-artificial-intelligence-altai-self-assessment.  
 [3]	Saria S, Subbaswamy A. Tutorial: Safe and Reliable Machine Learning. ArXiv 2019; abs/1904.07204. https://doi.org/10.48550/arXiv.1904.07204.
 
