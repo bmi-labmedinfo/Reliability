@@ -143,7 +143,7 @@ RD = create_reliability_detector('regression', ae, syn_pts, mse_syn_pts, mse_thr
 ~~~
 9. It is now possible to compute the Reliability of the test_set
 ~~~python 
-test_reliability= compute_dataset_reliability(RD, X_test, mode='total')
+reliability_test = compute_dataset_reliability(RD, X_test, mode='total')
 reliable_test = X_test[np.where(reliability_test == 1)]
 unreliable_test = X_test[np.where(reliability_test == 0)]
 ~~~
